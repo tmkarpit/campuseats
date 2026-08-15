@@ -115,7 +115,7 @@ Slowest resource time: 878 ms
 
 No output means the working tree was clean.
 
-### `git log --oneline --decorate`
+### Original assignment commits
 
 ```text
 f4a13db (HEAD -> master) Add assignment HTTP and project brief files
