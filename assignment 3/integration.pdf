@@ -1,0 +1,116 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R /F3 9 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 3351 >>
+stream
+BT /F2 18 Tf 72 790 Td (CampusEats SOAP Partner Integration) Tj ET
+BT /F2 13 Tf 72 756 Td (Team Details) Tj ET
+BT /F1 10 Tf 72 732 Td (TeamID: TODO-TEAMID) Tj ET
+BT /F1 10 Tf 72 714 Td (Members: TODO-ROLL / TODO-NAME) Tj ET
+BT /F2 13 Tf 72 690 Td (Context) Tj ET
+BT /F1 10 Tf 72 666 Td (CampusEats integrates with TrustPay Payment Gateway for the ChargePayment operation used) Tj ET
+BT /F1 10 Tf 72 652 Td (during checkout. This partner edge is SOAP because payment processing needs a strict) Tj ET
+BT /F1 10 Tf 72 638 Td (message contract, message-level credentials, and predictable fault structures for) Tj ET
+BT /F1 10 Tf 72 624 Td (transaction handling. The rest of CampusEats can remain REST because menu browsing, cart) Tj ET
+BT /F1 10 Tf 72 610 Td (management, and order status queries are resource-oriented and can evolve with simpler) Tj ET
+BT /F1 10 Tf 72 596 Td (JSON contracts. The payment edge is different because CampusEats must preserve a stable) Tj ET
+BT /F1 10 Tf 72 582 Td (contract with an external financial partner and map partner failures into CampusEats) Tj ET
+BT /F1 10 Tf 72 568 Td (errors without exposing partner vocabulary to students.) Tj ET
+BT /F2 13 Tf 72 544 Td (HTTP Binding) Tj ET
+BT /F1 10 Tf 72 520 Td (Endpoint URL: https://api.trustpay.example.com/soap/payment/v1) Tj ET
+BT /F1 10 Tf 72 502 Td (SOAPAction: "urn:campuseats:partners:trustpay:ChargePayment") Tj ET
+BT /F3 8 Tf 72 484 Td (POST /soap/payment/v1 HTTP/1.1) Tj ET
+BT /F3 8 Tf 72 473 Td (Host: api.trustpay.example.com) Tj ET
+BT /F3 8 Tf 72 462 Td (Content-Type: text/xml; charset=utf-8) Tj ET
+BT /F3 8 Tf 72 451 Td (SOAPAction: "urn:campuseats:partners:trustpay:ChargePayment") Tj ET
+BT /F3 8 Tf 72 440 Td (Content-Length: 896) Tj ET
+BT /F3 8 Tf 72 429 Td () Tj ET
+BT /F3 8 Tf 72 418 Td (<?xml version="1.0" encoding="UTF-8"?>) Tj ET
+BT /F3 8 Tf 72 407 Td (<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/") Tj ET
+BT /F3 8 Tf 72 396 Td (    xmlns:pay="http://campuseats.example.com/partners/trustpay/payment/v1">) Tj ET
+BT /F3 8 Tf 72 385 Td (  <soap:Header>) Tj ET
+BT /F3 8 Tf 72 374 Td (    <pay:AuthHeader>) Tj ET
+BT /F3 8 Tf 72 363 Td (      <pay:merchantId>CEATS-MERCHANT-0091</pay:merchantId>) Tj ET
+BT /F3 8 Tf 72 352 Td (      <pay:apiKey>test_9x83b7f2c1</pay:apiKey>) Tj ET
+BT /F3 8 Tf 72 341 Td (      <pay:requestTimestamp>2026-08-26T10:15:30Z</pay:requestTimestamp>) Tj ET
+BT /F3 8 Tf 72 330 Td (      <pay:nonce>f7c1f4a0-55a3-4b4e-8d37-0d10f7b12a40</pay:nonce>) Tj ET
+BT /F3 8 Tf 72 319 Td (    </pay:AuthHeader>) Tj ET
+BT /F3 8 Tf 72 308 Td (  </soap:Header>) Tj ET
+BT /F3 8 Tf 72 297 Td (  <soap:Body>) Tj ET
+BT /F3 8 Tf 72 286 Td (    <pay:ChargePaymentRequest>) Tj ET
+BT /F3 8 Tf 72 275 Td (      <pay:orderId>CE-ORD-20260826-1042</pay:orderId>) Tj ET
+BT /F3 8 Tf 72 264 Td (      <pay:studentId>STU-2024-0176</pay:studentId>) Tj ET
+BT /F3 8 Tf 72 253 Td (      <pay:amount>248.50</pay:amount>) Tj ET
+BT /F3 8 Tf 72 242 Td (      <pay:currency>USD</pay:currency>) Tj ET
+BT /F3 8 Tf 72 231 Td (      <pay:cardToken>tok_campus_visa_1881</pay:cardToken>) Tj ET
+BT /F3 8 Tf 72 220 Td (      <pay:capture>true</pay:capture>) Tj ET
+BT /F3 8 Tf 72 209 Td (    </pay:ChargePaymentRequest>) Tj ET
+BT /F3 8 Tf 72 198 Td (  </soap:Body>) Tj ET
+BT /F3 8 Tf 72 187 Td (</soap:Envelope>) Tj ET
+BT /F1 9 Tf 72 34 Td (Page 1) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 7 0 R /F2 8 0 R /F3 9 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 1739 >>
+stream
+BT /F2 13 Tf 72 784 Td (Discovery) Tj ET
+BT /F1 10 Tf 72 760 Td (CampusEats obtains the WSDL from a partner catalogue maintained by the platform) Tj ET
+BT /F1 10 Tf 72 746 Td (integration team. At deployment time, the checkout service looks up the active payment) Tj ET
+BT /F1 10 Tf 72 732 Td (gateway record, downloads the WSDL from the registered contract URL, and binds the) Tj ET
+BT /F1 10 Tf 72 718 Td (generated SOAP client to the endpoint listed in the record.) Tj ET
+BT /F1 10 Tf 72 700 Td (Registry entry:) Tj ET
+BT /F1 10 Tf 72 682 Td (business: TrustPay Gateway Services) Tj ET
+BT /F1 10 Tf 72 664 Td (service: TrustPayPaymentService) Tj ET
+BT /F1 10 Tf 72 646 Td (endpoint: https://api.trustpay.example.com/soap/payment/v1) Tj ET
+BT /F1 10 Tf 72 628 Td (WSDL/tModel pointer:) Tj ET
+BT /F1 10 Tf 72 614 Td (https://catalog.campuseats.example.com/wsdl/trustpay-payment-v1.wsdl) Tj ET
+BT /F1 10 Tf 72 596 Td (binding: SOAP 1.1 over HTTP, document/literal) Tj ET
+BT /F1 10 Tf 72 578 Td (operation: ChargePayment) Tj ET
+BT /F2 13 Tf 72 554 Td (Fault Mapping) Tj ET
+BT /F1 10 Tf 72 530 Td (TrustPay returns payment-specific SOAP faults such as CARD_DECLINED inside PaymentFault.) Tj ET
+BT /F1 10 Tf 72 516 Td (CampusEats maps this to the Assignment 2 placeOrder contract error PAYMENT_DECLINED with) Tj ET
+BT /F1 10 Tf 72 502 Td (the student-facing message Payment was declined. Please use another payment method. The) Tj ET
+BT /F1 10 Tf 72 488 Td (CampusEats API does not expose CARD_DECLINED, TP-ERR-449102, or any other TrustPay-only) Tj ET
+BT /F1 10 Tf 72 474 Td (vocabulary to students; those details stay in internal logs for support and) Tj ET
+BT /F1 10 Tf 72 460 Td (reconciliation.) Tj ET
+BT /F1 9 Tf 72 34 Td (Page 2) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000273 00000 n 
+0000003676 00000 n 
+0000003822 00000 n 
+0000005613 00000 n 
+0000005683 00000 n 
+0000005758 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+5826
+%%EOF

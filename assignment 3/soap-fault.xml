@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:pay="http://campuseats.example.com/partners/trustpay/payment/v1">
+  <soap:Body>
+    <soap:Fault>
+      <faultcode>soap:Client</faultcode>
+      <faultstring>Payment declined</faultstring>
+      <detail>
+        <pay:PaymentFault>
+          <pay:code>CARD_DECLINED</pay:code>
+          <pay:message>The issuing bank declined the transaction.</pay:message>
+          <pay:partnerReference>TP-ERR-449102</pay:partnerReference>
+        </pay:PaymentFault>
+      </detail>
+    </soap:Fault>
+  </soap:Body>
+</soap:Envelope>

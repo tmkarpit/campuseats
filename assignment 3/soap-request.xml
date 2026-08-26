@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:pay="http://campuseats.example.com/partners/trustpay/payment/v1">
+  <soap:Header>
+    <pay:AuthHeader>
+      <pay:merchantId>CEATS-MERCHANT-0091</pay:merchantId>
+      <pay:apiKey>test_9x83b7f2c1</pay:apiKey>
+      <pay:requestTimestamp>2026-08-26T10:15:30Z</pay:requestTimestamp>
+      <pay:nonce>f7c1f4a0-55a3-4b4e-8d37-0d10f7b12a40</pay:nonce>
+    </pay:AuthHeader>
+  </soap:Header>
+  <soap:Body>
+    <pay:ChargePaymentRequest>
+      <pay:orderId>CE-ORD-20260826-1042</pay:orderId>
+      <pay:studentId>STU-2024-0176</pay:studentId>
+      <pay:amount>248.50</pay:amount>
+      <pay:currency>USD</pay:currency>
+      <pay:cardToken>tok_campus_visa_1881</pay:cardToken>
+      <pay:capture>true</pay:capture>
+    </pay:ChargePaymentRequest>
+  </soap:Body>
+</soap:Envelope>

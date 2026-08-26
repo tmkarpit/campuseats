@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="http://campuseats.example.com/partners/trustpay/payment/v1"
+    targetNamespace="http://campuseats.example.com/partners/trustpay/payment/v1"
+    name="TrustPayPaymentService">
+
+  <types>
+    <xsd:schema
+        targetNamespace="http://campuseats.example.com/partners/trustpay/payment/v1"
+        elementFormDefault="qualified">
+
+      <xsd:element name="AuthHeader">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="merchantId" type="xsd:string"/>
+            <xsd:element name="apiKey" type="xsd:string"/>
+            <xsd:element name="requestTimestamp" type="xsd:dateTime"/>
+            <xsd:element name="nonce" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="ChargePaymentRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="orderId" type="xsd:string"/>
+            <xsd:element name="studentId" type="xsd:string"/>
+            <xsd:element name="amount" type="xsd:decimal"/>
+            <xsd:element name="currency" type="xsd:string"/>
+            <xsd:element name="cardToken" type="xsd:string"/>
+            <xsd:element name="capture" type="xsd:boolean"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="ChargePaymentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="orderId" type="xsd:string"/>
+            <xsd:element name="paymentId" type="xsd:string"/>
+            <xsd:element name="authorizationCode" type="xsd:string"/>
+            <xsd:element name="status" type="xsd:string"/>
+            <xsd:element name="chargedAmount" type="xsd:decimal"/>
+            <xsd:element name="currency" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="PaymentFault">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="code" type="xsd:string"/>
+            <xsd:element name="message" type="xsd:string"/>
+            <xsd:element name="partnerReference" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="AuthHeaderMessage">
+    <part name="auth" element="tns:AuthHeader"/>
+  </message>
+
+  <message name="ChargePaymentInput">
+    <part name="parameters" element="tns:ChargePaymentRequest"/>
+  </message>
+
+  <message name="ChargePaymentOutput">
+    <part name="parameters" element="tns:ChargePaymentResponse"/>
+  </message>
+
+  <message name="PaymentFaultMessage">
+    <part name="fault" element="tns:PaymentFault"/>
+  </message>
+
+  <portType name="TrustPayPaymentPortType">
+    <operation name="ChargePayment">
+      <input message="tns:ChargePaymentInput"/>
+      <output message="tns:ChargePaymentOutput"/>
+      <fault name="PaymentFault" message="tns:PaymentFaultMessage"/>
+    </operation>
+  </portType>
+
+  <binding name="TrustPayPaymentSoapBinding" type="tns:TrustPayPaymentPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="ChargePayment">
+      <soap:operation soapAction="urn:campuseats:partners:trustpay:ChargePayment"/>
+      <input>
+        <soap:header message="tns:AuthHeaderMessage" part="auth" use="literal"/>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+      <fault name="PaymentFault">
+        <soap:fault name="PaymentFault" use="literal"/>
+      </fault>
+    </operation>
+  </binding>
+
+  <service name="TrustPayPaymentService">
+    <port name="TrustPayPaymentPort" binding="tns:TrustPayPaymentSoapBinding">
+      <soap:address location="https://api.trustpay.example.com/soap/payment/v1"/>
+    </port>
+  </service>
+</definitions>

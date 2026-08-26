@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:pay="http://campuseats.example.com/partners/trustpay/payment/v1">
+  <soap:Body>
+    <pay:ChargePaymentResponse>
+      <pay:orderId>CE-ORD-20260826-1042</pay:orderId>
+      <pay:paymentId>TP-PAY-78451290</pay:paymentId>
+      <pay:authorizationCode>AUTH-66K29P</pay:authorizationCode>
+      <pay:status>AUTHORIZED</pay:status>
+      <pay:chargedAmount>248.50</pay:chargedAmount>
+      <pay:currency>USD</pay:currency>
+    </pay:ChargePaymentResponse>
+  </soap:Body>
+</soap:Envelope>
