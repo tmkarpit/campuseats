@@ -28,8 +28,9 @@ def wrap(text, width):
 content = [
     ("TITLE", "CampusEats SOAP Partner Integration"),
     ("H", "Team Details"),
-    ("P", "TeamID: TODO-TEAMID"),
-    ("P", "Members: TODO-ROLL / TODO-NAME"),
+    ("P", "TeamID: 5"),
+    ("P", "Members: Not provided / Arpit Tamrakar"),
+    ("P", "Members: Not provided / Yash Namdev"),
     ("H", "Context"),
     (
         "P",
