@@ -8,6 +8,7 @@
     name="TrustPayPaymentService">
 
   <types>
+
     <xsd:schema
         targetNamespace="http://campuseats.example.com/partners/trustpay/payment/v1"
         elementFormDefault="qualified">
@@ -61,6 +62,8 @@
     </xsd:schema>
   </types>
 
+
+
   <message name="AuthHeaderMessage">
     <part name="auth" element="tns:AuthHeader"/>
   </message>
@@ -101,6 +104,8 @@
       </fault>
     </operation>
   </binding>
+
+
 
   <service name="TrustPayPaymentService">
     <port name="TrustPayPaymentPort" binding="tns:TrustPayPaymentSoapBinding">
