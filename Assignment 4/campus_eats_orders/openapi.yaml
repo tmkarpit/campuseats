@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: CampusEats Orders API
+  version: 1.0.0
+  description: Creates, reads, filters, and cancels food orders.
+servers:
+  - url: http://localhost:8001
+paths:
+  /orders:
+    post:
+      summary: Create an order
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOrderRequest' }
+      responses:
+        '201':
+          description: Order created, or the original result returned for a retry.
+          headers:
+            Location: { schema: { type: string }, description: URL of the order }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } }
+        '400': { $ref: '#/components/responses/MalformedOrder' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+    get:
+      summary: List orders, optionally filtered by status
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [PAYMENT_PENDING, CONFIRMED, CANCELLATION_REQUESTED, CANCELLED] }
+      responses:
+        '200':
+          description: Matching orders
+          content: { application/json: { schema: { $ref: '#/components/schemas/OrderList' } } }
+        '400': { $ref: '#/components/responses/InvalidFilter' }
+  /orders/{orderId}:
+    get:
+      summary: Get one order
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: The order
+          content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } }
+        '404': { $ref: '#/components/responses/OrderNotFound' }
+  /orders/{orderId}/cancellation:
+    post:
+      summary: Request cancellation of an order
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancellationRequest' }
+      responses:
+        '202':
+          description: Cancellation accepted for asynchronous processing.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } }
+        '404': { $ref: '#/components/responses/OrderNotFound' }
+        '409': { $ref: '#/components/responses/StateConflict' }
+        '422': { $ref: '#/components/responses/DomainRefusal' }
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, example: ord-a1b2c3d4e5f6 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 1, example: 5495f7b1-8a3a-4d45-a4ca-12dd2e22a839 }
+  schemas:
+    OrderItem:
+      type: object
+      required: [menuItemId, quantity]
+      properties:
+        menuItemId: { type: string, example: menu-42 }
+        quantity: { type: integer, minimum: 1, example: 2 }
+    CreateOrderRequest:
+      type: object
+      required: [customerId, items, deliveryAddress]
+      properties:
+        customerId: { type: string, example: stu-102 }
+        items: { type: array, minItems: 1, items: { $ref: '#/components/schemas/OrderItem' } }
+        deliveryAddress: { type: string, example: Hostel A, Room 210 }
+    CancellationRequest:
+      type: object
+      properties:
+        reason: { type: string, example: Ordered accidentally }
+    Order:
+      type: object
+      required: [id, customerId, items, deliveryAddress, status, createdAt]
+      properties:
+        id: { type: string }
+        customerId: { type: string }
+        items: { type: array, items: { $ref: '#/components/schemas/OrderItem' } }
+        deliveryAddress: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    OrderList:
+      type: object
+      required: [orders]
+      properties:
+        orders: { type: array, items: { $ref: '#/components/schemas/Order' } }
+    Problem:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+  responses:
+    MalformedOrder: { description: Malformed JSON or invalid request fields, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    InvalidFilter: { description: Unsupported status filter, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    OrderNotFound: { description: No order has this id, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    StateConflict: { description: The cancellation was already requested, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    DomainRefusal: { description: The order state cannot be cancelled, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Unavailable: { description: The service could not safely complete the request, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }

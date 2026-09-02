@@ -1,0 +1,36 @@
+$ curl -i -X POST http://127.0.0.1:8001/orders \
+  -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-key-001' \
+  --data '{"customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210"}'
+HTTP/1.0 201 Created
+Content-Type: application/json
+Location: /orders/ord-10c2f1e4dad5
+
+{"id":"ord-10c2f1e4dad5","customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210","status":"PAYMENT_PENDING"}
+
+$ curl -i -X POST http://127.0.0.1:8001/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-key-001' --data '...same body...'
+HTTP/1.0 201 Created
+Location: /orders/ord-10c2f1e4dad5
+
+{"id":"ord-10c2f1e4dad5","customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210","status":"PAYMENT_PENDING"}
+
+$ curl -i -X POST http://127.0.0.1:8001/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: malformed-001' --data '{"customerId":"stu-102"}'
+HTTP/1.0 400 Bad Request
+Content-Type: application/problem+json
+
+{"type":"about:blank","title":"Malformed order","status":400,"detail":"Missing required field(s): items, deliveryAddress."}
+
+$ curl -i http://127.0.0.1:8001/orders/not-real
+HTTP/1.0 404 Not Found
+Content-Type: application/problem+json
+
+{"type":"about:blank","title":"Order not found","status":404,"detail":"No order exists with that id."}
+
+$ curl -i -X POST http://127.0.0.1:8001/orders/ord-10c2f1e4dad5/cancellation -H 'Content-Type: application/json' --data '{"reason":"Ordered accidentally"}'
+HTTP/1.0 202 Accepted
+Content-Type: application/json
+
+$ curl -i -X POST http://127.0.0.1:8001/orders/ord-10c2f1e4dad5/cancellation -H 'Content-Type: application/json' --data '{"reason":"Duplicate cancellation"}'
+HTTP/1.0 409 Conflict
+Content-Type: application/problem+json
+
+{"type":"about:blank","title":"Cancellation already requested","status":409,"detail":"The order is already being cancelled."}
