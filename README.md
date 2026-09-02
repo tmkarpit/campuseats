@@ -1,3 +1,13 @@
+# Group Member
+
+| Name | Student Id |
+|---|:---:|
+| Yash Namdev | 20252651066 |
+| Arpit Tamarkar | 20252651012 |
+| Saurabh Singh Chauchan | 20252651049 |
+| Harsh Jain | 20252651022 |
+| Anupam Rai | 20252651011 |
+
 # CampusEats
 
 CampusEats is a course project for planning a web services system that connects students, campus food vendors, and delivery or pickup workflows.
