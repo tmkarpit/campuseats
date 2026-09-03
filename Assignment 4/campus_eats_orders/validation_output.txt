@@ -1,0 +1,12 @@
+$ python3 validate_openapi.py openapi.yaml
+OpenAPI document parsed successfully.
+Structural checks completed: 0 errors.
+
+$ python3 -m pytest -q
+# Install requirements.txt first in an environment that includes pytest.
+# This sandbox has no pip/pytest, so the four test functions were executed
+# directly with Python and all passed:
+PASS test_create_returns_201_and_location
+PASS test_idempotent_repeat_returns_original_order
+PASS test_malformed_body_uses_problem_shape
+PASS test_unknown_order_returns_404

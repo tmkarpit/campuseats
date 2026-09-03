@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CampusEats Orders — Assignment 4</title>
+<style>@page{size:A4;margin:15mm}body{font:11pt Arial,sans-serif;line-height:1.45;color:#17212b;margin:0 auto;max-width:850px;padding:38px}h1{font-size:27pt;color:#133c55;margin-bottom:3px}h2{color:#0d5c63;border-bottom:1px solid #9dc6c8;padding-bottom:3px;margin-top:27px}h3{color:#133c55;margin-bottom:4px}table{border-collapse:collapse;width:100%;margin:10px 0}th,td{border:1px solid #aab8c2;padding:7px;text-align:left;vertical-align:top}th{background:#e8f3f3}code,pre{font-family:"Courier New",monospace;font-size:9pt}pre{background:#f4f6f8;padding:10px;white-space:pre-wrap}.meta{color:#52616b}.note{background:#fff5dc;border-left:4px solid #e3ae35;padding:10px}.page{page-break-before:always}@media print{body{padding:20px}.page{page-break-before:always}}</style></head><body>
+<h1>CampusEats Orders Service</h1><p class="meta">CS543 · Web Services · Assignment 4<br><strong>Team ID:</strong> 5 &nbsp; | &nbsp; <strong>Student:</strong> Yash Namdev &nbsp; | &nbsp; <strong>Roll / Registration No.:</strong> 20252651066</p>
+<p>This submission rebuilds the CampusEats <strong>Orders</strong> service as a REST API. Payments is not used as the chosen service.</p>
+<div class="note"><strong>Assignment 3 basis.</strong> The comparison below uses the actual Team 5 TrustPay payment integration: its 115-line <code>partner.wsdl</code>, <code>CARD_DECLINED</code> SOAP fault, and partner-catalogue discovery workflow.</div>
+<h2>Part A — resource model</h2><h3>SOAP-style starting operations</h3><p><code>placeOrder(customerId, items, deliveryAddress)</code>, <code>getOrder(orderId)</code>, <code>listOrders(status)</code>, and <code>cancelOrder(orderId, reason)</code>.</p>
+<table><tr><th>Method</th><th>URL</th><th>What it does</th><th>Success</th><th>Failures</th></tr><tr><td>POST</td><td>/orders</td><td>Creates an order</td><td>201</td><td>400, 503</td></tr><tr><td>GET</td><td>/orders/{orderId}</td><td>Returns one order</td><td>200</td><td>404</td></tr><tr><td>GET</td><td>/orders?status=CONFIRMED</td><td>Lists matching orders</td><td>200</td><td>400</td></tr><tr><td>POST</td><td>/orders/{orderId}/cancellation</td><td>Requests asynchronous cancellation</td><td>202</td><td>400, 404, 409, 422</td></tr></table>
+<h3>Hard mapping choice</h3><p><code>cancelOrder</code> looks imperative. It is represented as creation of the durable cancellation sub-resource, <code>/orders/{orderId}/cancellation</code>, which has a request, state, and asynchronous processing. <code>/cancelOrder</code> was rejected as an RPC URL; <code>DELETE /orders/{orderId}</code> was rejected because the order must remain auditable and cancellation is not deletion.</p>
+<h2>Part B and C — contract and implementation</h2><p><code>openapi.yaml</code> is OpenAPI 3.0.3 and declares reusable request, response, and <code>Problem</code> schemas. Every operation has inputs and at least two responses. The preflight validator completed with zero structural errors.</p>
+<pre>$ python3 validate_openapi.py openapi.yaml
+OpenAPI document parsed successfully.
+Structural checks completed: 0 errors.</pre>
+<p>The service is dependency-free WSGI Python. Stored <code>Order</code> records include an internal UUID and payment reference, while <code>as_json()</code> omits both. <code>validate()</code> checks a request before accessing its fields. All failures use <code>problem(type, title, status, detail)</code>.</p>
+<p>POST <code>/orders</code> requires <code>Idempotency-Key</code>. The store atomically maps the key to one order; a repeat returns the original 201 result and Location header without another payment call.</p>
+<h2>Part D — resilient payment call</h2><p>The payment address is read from <code>PAYMENTS_URL</code>, never hard-coded. A payment POST has a 2-second timeout, up to three tries, exponential backoff and jitter. Only connection/timeout and server-side transient errors can be retried; any 4xx stops immediately. The idempotency key goes on every payment request.</p><p>If Payments is absent or unreachable, the order remains <code>PAYMENT_PENDING</code>. This is safer than marking it paid or confirmed: it preserves the order and prevents delivery from treating an uncharged order as complete.</p>
+<div class="page"></div><h2>Required curl transcript</h2><pre>$ curl -i -X POST http://127.0.0.1:8001/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-key-001' --data '{...valid order...}'
+HTTP/1.0 201 Created
+Location: /orders/ord-10c2f1e4dad5
+
+$ curl -i -X POST http://127.0.0.1:8001/orders -H 'Idempotency-Key: demo-key-001' --data '{...same body...}'
+HTTP/1.0 201 Created
+Location: /orders/ord-10c2f1e4dad5
+
+$ curl -i -X POST http://127.0.0.1:8001/orders -H 'Idempotency-Key: malformed-001' --data '{"customerId":"stu-102"}'
+HTTP/1.0 400 Bad Request
+{"type":"about:blank","title":"Malformed order","status":400,"detail":"Missing required field(s): items, deliveryAddress."}
+
+$ curl -i http://127.0.0.1:8001/orders/not-real
+HTTP/1.0 404 Not Found
+{"type":"about:blank","title":"Order not found","status":404,"detail":"No order exists with that id."}
+
+$ curl -i -X POST http://127.0.0.1:8001/orders/ord-10c2f1e4dad5/cancellation --data '{"reason":"Ordered accidentally"}'
+HTTP/1.0 202 Accepted
+
+$ curl -i -X POST http://127.0.0.1:8001/orders/ord-10c2f1e4dad5/cancellation --data '{"reason":"Duplicate cancellation"}'
+HTTP/1.0 409 Conflict
+{"type":"about:blank","title":"Cancellation already requested","status":409,"detail":"The order is already being cancelled."}</pre>
+<h2>Comparison with SOAP / UDDI</h2><p><strong>1.</strong> The actual Assignment 3 TrustPay WSDL has 115 lines; <code>openapi.yaml</code> has 125, a difference of 10. OpenAPI describes resource paths, HTTP codes, JSON representations and reusable errors. The WSDL's SOAP binding and <code>SOAPAction</code> are unnecessary: HTTP methods/media types and the OpenAPI server URL supply those roles.</p><p><strong>2.</strong> The actual SOAP fault contains <code>&lt;faultcode&gt;soap:Client&lt;/faultcode&gt;</code>, <code>Payment declined</code>, and partner code <code>CARD_DECLINED</code>. REST returns <code>422 Unprocessable Content</code> with <code>{"type":"about:blank","title":"Payment declined","status":422,"detail":"Payment was declined. Please use another payment method."}</code>. An error wrapped in 200 makes caches, gateways, monitoring and retry logic misread failure as success.</p><p><strong>3.</strong> In Assignment 3, TrustPay was published in the partner catalogue; checkout found the active gateway record and WSDL pointer; then a generated client bound to the recorded endpoint. Here, publish is the OpenAPI file, find is deployment configuration through <code>PAYMENTS_URL</code>, and bind is a generic HTTP client using the documented method, path and JSON media type.</p><p><strong>4.</strong> <code>validate()</code> now enforces request shape. Without it, a missing <code>items</code> field could become a server error or invalid order instead of a 400 response.</p><p><strong>5.</strong> SOAP remains sensible for the actual TrustPay payment edge because it needs a strict message contract, message-level credentials and predictable faults—the purchased guarantee is an authenticated, integrity-protected, stable enterprise contract.</p>
+<h2>Submission contents</h2><p><code>openapi.yaml</code>, <code>models.py</code>, <code>store.py</code>, <code>errors.py</code>, <code>app.py</code>, <code>tests/test_orders.py</code>, <code>NOTES.md</code>, <code>curl_transcript.txt</code>, and this PDF.</p>
+</body></html>
