@@ -1,0 +1,463 @@
+# CampusEats Orders API — Live curl -v Verification Transcript
+# Generated against live running WSGI service on port 8001
+
+===========================================================================
+## 1. Successful Create: 201 Created + Location + ETag
+===========================================================================
+$ curl -v -X POST http://127.0.0.1:8001/orders -H Authorization: Bearer demo-token -H Content-Type: application/json -H Accept: application/json -H Idempotency-Key: a5-demo-key-001 --data {"customerId": "stu-102", "items": [{"menuItemId": "menu-42", "quantity": 2}], "deliveryAddress": "Hostel A, Room 210"}
+
+Note: Unnecessary use of -X or --request, POST is already inferred.
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> POST /orders HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Authorization: Bearer demo-token
+> Content-Type: application/json
+> Accept: application/json
+> Idempotency-Key: a5-demo-key-001
+> Content-Length: 119
+> 
+} [119 bytes data]
+* HTTP 1.0, assume close after body
+< HTTP/1.0 201 Created
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 49
+< Location: /orders/ord-f8a326caa1a1
+< Cache-Control: no-store
+< ETag: "0aa5da47aa253af6"
+< Content-Length: 209
+< 
+{ [209 bytes data]
+
+100   328  100   209  100   119  58658  33398 --:--:-- --:--:-- --:--:--  106k
+* Closing connection
+{"id":"ord-f8a326caa1a1","customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210","status":"PAYMENT_PENDING","createdAt":"2026-09-22T03:06:53.004819+00:00"}
+
+
+===========================================================================
+## 2. Idempotent Repeat: Same Idempotency-Key Returns Original 201 Result
+===========================================================================
+$ curl -v -X POST http://127.0.0.1:8001/orders -H Authorization: Bearer demo-token -H Content-Type: application/json -H Accept: application/json -H Idempotency-Key: a5-demo-key-001 --data {"customerId": "stu-102", "items": [{"menuItemId": "menu-42", "quantity": 2}], "deliveryAddress": "Hostel A, Room 210"}
+
+Note: Unnecessary use of -X or --request, POST is already inferred.
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> POST /orders HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Authorization: Bearer demo-token
+> Content-Type: application/json
+> Accept: application/json
+> Idempotency-Key: a5-demo-key-001
+> Content-Length: 119
+> 
+} [119 bytes data]
+* HTTP 1.0, assume close after body
+< HTTP/1.0 201 Created
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 48
+< Location: /orders/ord-f8a326caa1a1
+< Cache-Control: no-store
+< ETag: "0aa5da47aa253af6"
+< Content-Length: 209
+< 
+{ [209 bytes data]
+
+100   328  100   209  100   119  80353  45751 --:--:-- --:--:-- --:--:--  160k
+* Closing connection
+{"id":"ord-f8a326caa1a1","customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210","status":"PAYMENT_PENDING","createdAt":"2026-09-22T03:06:53.004819+00:00"}
+
+
+===========================================================================
+## 3. Conditional GET: Matching If-None-Match Returns 304 Not Modified (No Body)
+===========================================================================
+$ curl -v http://127.0.0.1:8001/orders/ord-f8a326caa1a1 -H Authorization: Bearer demo-token -H If-None-Match: "0aa5da47aa253af6"
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> GET /orders/ord-f8a326caa1a1 HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Authorization: Bearer demo-token
+> If-None-Match: "0aa5da47aa253af6"
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 304 Not Modified
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 47
+< ETag: "0aa5da47aa253af6"
+< Cache-Control: private, max-age=60
+< Content-Length: 0
+< 
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+* Closing connection
+
+
+===========================================================================
+## 4. Conditional Write: Stale If-Match Rejected with 412 Precondition Failed
+===========================================================================
+$ curl -v -X PATCH http://127.0.0.1:8001/orders/ord-f8a326caa1a1 -H Authorization: Bearer demo-token -H Content-Type: application/json -H If-Match: "stale-etag-99999" --data {"deliveryAddress": "Faculty Lounge 104"}
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> PATCH /orders/ord-f8a326caa1a1 HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Authorization: Bearer demo-token
+> Content-Type: application/json
+> If-Match: "stale-etag-99999"
+> Content-Length: 41
+> 
+} [41 bytes data]
+* HTTP 1.0, assume close after body
+< HTTP/1.0 412 Precondition Failed
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 46
+< ETag: "0aa5da47aa253af6"
+< Content-Length: 114
+< 
+{ [114 bytes data]
+
+100   155  100   114  100    41  58431  21014 --:--:-- --:--:-- --:--:--  151k
+* Closing connection
+{"type":"about:blank","title":"Precondition failed","status":412,"detail":"If-Match must equal the current ETag."}
+
+
+===========================================================================
+## 5. Failure Path 400: Malformed Request Missing Required Fields
+===========================================================================
+$ curl -v -X POST http://127.0.0.1:8001/orders -H Authorization: Bearer demo-token -H Content-Type: application/json -H Idempotency-Key: a5-bad-key --data {"customerId": "stu-102"}
+
+Note: Unnecessary use of -X or --request, POST is already inferred.
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> POST /orders HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Authorization: Bearer demo-token
+> Content-Type: application/json
+> Idempotency-Key: a5-bad-key
+> Content-Length: 25
+> 
+} [25 bytes data]
+* HTTP 1.0, assume close after body
+< HTTP/1.0 400 Bad Request
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 45
+< Content-Length: 123
+< 
+{ [123 bytes data]
+
+100   148  100   123  100    25  58293  11848 --:--:-- --:--:-- --:--:-- 74000
+* Closing connection
+{"type":"about:blank","title":"Malformed order","status":400,"detail":"Missing required field(s): items, deliveryAddress."}
+
+
+===========================================================================
+## 6. Failure Path 404: Resource Not Found
+===========================================================================
+$ curl -v http://127.0.0.1:8001/orders/nonexistent-ord-9999 -H Authorization: Bearer demo-token
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> GET /orders/nonexistent-ord-9999 HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Authorization: Bearer demo-token
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 404 Not Found
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 44
+< Content-Length: 102
+< 
+{ [102 bytes data]
+
+100   102  100   102    0     0  61261      0 --:--:-- --:--:-- --:--:--   99k
+* Closing connection
+{"type":"about:blank","title":"Order not found","status":404,"detail":"No order exists with that id."}
+
+
+===========================================================================
+## 7. Failure Path 401: Missing Authorization Header
+===========================================================================
+$ curl -v http://127.0.0.1:8001/orders/ord-f8a326caa1a1
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> GET /orders/ord-f8a326caa1a1 HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 401 Unauthorized
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 49
+< WWW-Authenticate: Bearer
+< Content-Length: 105
+< 
+{ [105 bytes data]
+
+100   105  100   105    0     0  57377      0 --:--:-- --:--:-- --:--:--  102k
+* Closing connection
+{"type":"about:blank","title":"Unauthorized","status":401,"detail":"Send Authorization: Bearer <token>."}
+
+
+===========================================================================
+## 8. Non-CRUD Sub-Resource: POST /orders/{id}/cancellation Returns 202 Accepted
+===========================================================================
+$ curl -v -X POST http://127.0.0.1:8001/orders/ord-f8a326caa1a1/cancellation -H Authorization: Bearer demo-token -H Content-Type: application/json --data {"reason": "Scheduled conflict"}
+
+Note: Unnecessary use of -X or --request, POST is already inferred.
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> POST /orders/ord-f8a326caa1a1/cancellation HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Authorization: Bearer demo-token
+> Content-Type: application/json
+> Content-Length: 32
+> 
+} [32 bytes data]
+* HTTP 1.0, assume close after body
+< HTTP/1.0 202 Accepted
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 43
+< ETag: "83b23d1ccfd633d0"
+< Cache-Control: no-store
+< Content-Length: 216
+< 
+{ [216 bytes data]
+
+100   248  100   216  100    32   180k  27373 --:--:-- --:--:-- --:--:--  242k
+* Closing connection
+{"id":"ord-f8a326caa1a1","customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210","status":"CANCELLATION_REQUESTED","createdAt":"2026-09-22T03:06:53.004819+00:00"}
+
+
+===========================================================================
+## 9. State Conflict: Duplicate Cancellation Returns 409 Conflict
+===========================================================================
+$ curl -v -X POST http://127.0.0.1:8001/orders/ord-f8a326caa1a1/cancellation -H Authorization: Bearer demo-token -H Content-Type: application/json --data {"reason": "Scheduled conflict"}
+
+Note: Unnecessary use of -X or --request, POST is already inferred.
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> POST /orders/ord-f8a326caa1a1/cancellation HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Authorization: Bearer demo-token
+> Content-Type: application/json
+> Content-Length: 32
+> 
+} [32 bytes data]
+* HTTP 1.0, assume close after body
+< HTTP/1.0 409 Conflict
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 42
+< Content-Length: 125
+< 
+{ [125 bytes data]
+
+100   157  100   125  100    32   131k  34557 --:--:-- --:--:-- --:--:--  153k
+* Closing connection
+{"type":"about:blank","title":"Cancellation already requested","status":409,"detail":"The order is already being cancelled."}
+
+
+===========================================================================
+## 10. Content Negotiation 406: Unsupported Accept Header (application/xml)
+===========================================================================
+$ curl -v http://127.0.0.1:8001/orders -H Authorization: Bearer demo-token -H Accept: application/xml
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> GET /orders HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Authorization: Bearer demo-token
+> Accept: application/xml
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 406 Not Acceptable
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Content-Type: application/json
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< Content-Length: 112
+< 
+{ [112 bytes data]
+
+100   112  100   112    0     0   135k      0 --:--:-- --:--:-- --:--:--  109k
+* Closing connection
+{"type":"about:blank","title":"Not acceptable","status":406,"detail":"This API only produces application/json."}
+
+
+===========================================================================
+## 11. OPTIONS Discovery and CORS Preflight: Returns Allow Header
+===========================================================================
+$ curl -v -X OPTIONS http://127.0.0.1:8001/orders/ord-f8a326caa1a1
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8001...
+* Connected to 127.0.0.1 (127.0.0.1) port 8001
+> OPTIONS /orders/ord-f8a326caa1a1 HTTP/1.1
+> Host: 127.0.0.1:8001
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 204 No Content
+< Date: Tue, 22 Sep 2026 03:06:53 GMT
+< Server: WSGIServer/0.2 CPython/3.12.3
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, If-None-Match, If-Match, X-HTTP-Method-Override, Accept, Accept-Encoding
+< Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+< Access-Control-Expose-Headers: Location, ETag, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, Content-Encoding
+< Vary: Accept, Accept-Encoding, Origin
+< X-Content-Type-Options: nosniff
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-RateLimit-Limit: 50
+< X-RateLimit-Remaining: 50
+< Allow: GET, PATCH, DELETE, OPTIONS
+< Content-Length: 0
+< 
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+* Closing connection
+
+
