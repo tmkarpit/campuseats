@@ -1,0 +1,504 @@
+openapi: 3.0.3
+info:
+  title: CampusEats Orders API
+  version: 2.0.0
+  description: >-
+    CampusEats Orders API with complete HTTP methods, headers, caching,
+    optimistic concurrency, rate limiting, and safe retry controls.
+servers:
+  - url: http://localhost:8001
+    description: Local development WSGI server
+security:
+  - bearerAuth: []
+paths:
+  /orders:
+    get:
+      summary: List orders as a safe, idempotent, paginated read
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - name: status
+          in: query
+          description: Filter orders by current status
+          schema:
+            type: string
+            enum: [PAYMENT_PENDING, CONFIRMED, CANCELLATION_REQUESTED, CANCELLED]
+        - name: sort
+          in: query
+          description: Sort direction by creation timestamp
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: page
+          in: query
+          description: Page number for pagination (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Number of orders per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderList'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '406':
+          $ref: '#/components/responses/Problem406'
+        '429':
+          $ref: '#/components/responses/Problem429'
+    post:
+      summary: Create an order; repeating an Idempotency-Key returns original result
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Accept'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/OrderCreated'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '406':
+          $ref: '#/components/responses/Problem406'
+        '429':
+          $ref: '#/components/responses/Problem429'
+    options:
+      summary: CORS preflight and discovery of supported methods
+      security: []
+      responses:
+        '204':
+          $ref: '#/components/responses/Options'
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      summary: Read one order; If-None-Match can return 304 without a body
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderRead'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '406':
+          $ref: '#/components/responses/Problem406'
+    patch:
+      summary: Change delivery address when If-Match has current ETag
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/MethodOverride'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderRead'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '412':
+          $ref: '#/components/responses/Problem412'
+    delete:
+      summary: Delete one order when If-Match has current ETag
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/MethodOverride'
+      responses:
+        '204':
+          description: Order successfully deleted
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '412':
+          $ref: '#/components/responses/Problem412'
+    options:
+      summary: CORS preflight and discovery of supported methods
+      security: []
+      responses:
+        '204':
+          $ref: '#/components/responses/Options'
+  /orders/{orderId}/cancellation:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      summary: Request asynchronous cancellation as a non-CRUD sub-resource
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancellationRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/OrderRead'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '422':
+          $ref: '#/components/responses/Problem422'
+    options:
+      summary: CORS preflight for cancellation sub-resource
+      security: []
+      responses:
+        '204':
+          $ref: '#/components/responses/Options'
+  /orders/{orderId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      summary: Alias for cancellation sub-resource
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancellationRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/OrderRead'
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '401':
+          $ref: '#/components/responses/Problem401'
+        '404':
+          $ref: '#/components/responses/Problem404'
+        '409':
+          $ref: '#/components/responses/Problem409'
+        '422':
+          $ref: '#/components/responses/Problem422'
+    options:
+      summary: CORS preflight for cancel sub-resource
+      security: []
+      responses:
+        '204':
+          $ref: '#/components/responses/Options'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+    Accept:
+      name: Accept
+      in: header
+      required: false
+      schema:
+        type: string
+        example: application/json
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      schema:
+        type: string
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+    MethodOverride:
+      name: X-HTTP-Method-Override
+      in: header
+      required: false
+      description: Documented fallback for constrained clients sending POST
+      schema:
+        type: string
+        enum: [PATCH, DELETE, PUT]
+  schemas:
+    OrderItem:
+      type: object
+      required:
+        - menuItemId
+        - quantity
+      properties:
+        menuItemId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+    CreateOrderRequest:
+      type: object
+      required:
+        - customerId
+        - items
+        - deliveryAddress
+      properties:
+        customerId:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        deliveryAddress:
+          type: string
+    UpdateOrderRequest:
+      type: object
+      required:
+        - deliveryAddress
+      properties:
+        deliveryAddress:
+          type: string
+    CancellationRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+    Order:
+      type: object
+      required:
+        - id
+        - customerId
+        - items
+        - deliveryAddress
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        deliveryAddress:
+          type: string
+        status:
+          type: string
+          enum: [PAYMENT_PENDING, CONFIRMED, CANCELLATION_REQUESTED, CANCELLED]
+        createdAt:
+          type: string
+          format: date-time
+    OrderList:
+      type: object
+      required:
+        - orders
+        - page
+        - pageSize
+        - total
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    Problem:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+  responses:
+    OrderCreated:
+      description: Created order or cached original result for idempotent retry
+      headers:
+        Location:
+          schema:
+            type: string
+        ETag:
+          schema:
+            type: string
+        Cache-Control:
+          schema:
+            type: string
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Order'
+    OrderRead:
+      description: Order representation
+      headers:
+        ETag:
+          schema:
+            type: string
+        Cache-Control:
+          schema:
+            type: string
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Order'
+    OrderList:
+      description: Paginated order representations
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OrderList'
+    NotModified:
+      description: ETag matched; representation not modified (zero byte body)
+      headers:
+        ETag:
+          schema:
+            type: string
+        Cache-Control:
+          schema:
+            type: string
+    Options:
+      description: Preflight response with allowed methods and CORS headers
+      headers:
+        Allow:
+          schema:
+            type: string
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+        Access-Control-Allow-Methods:
+          schema:
+            type: string
+        Access-Control-Allow-Headers:
+          schema:
+            type: string
+    Problem400:
+      description: Malformed request or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem401:
+      description: Bearer token missing or empty
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem404:
+      description: Target resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem406:
+      description: Unsupported requested media type in Accept header
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem409:
+      description: Conflict with current state of resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem412:
+      description: Precondition failed (If-Match ETag mismatch)
+      headers:
+        ETag:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem422:
+      description: Domain refusal (business logic refuses action)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem429:
+      description: Per-client rate limit budget exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'

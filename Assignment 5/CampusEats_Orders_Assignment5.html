@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CampusEats Orders — Assignment 5: HTTP Methods & Headers</title>
+<style>
+@page { size: A4; margin: 15mm; }
+body { font: 10pt Arial, sans-serif; line-height: 1.45; color: #17212b; margin: 0 auto; max-width: 860px; padding: 30px; }
+h1 { font-size: 24pt; color: #133c55; margin-bottom: 2px; }
+h2 { color: #0d5c63; border-bottom: 1.5px solid #9dc6c8; padding-bottom: 3px; margin-top: 22px; font-size: 14pt; }
+h3 { color: #133c55; margin-bottom: 4px; font-size: 11pt; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 16px 0; font-size: 9pt; }
+th, td { border: 1px solid #aab8c2; padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: #e8f3f3; color: #133c55; font-weight: bold; }
+code, pre { font-family: "Courier New", Courier, monospace; font-size: 8.5pt; }
+pre { background: #f4f6f8; padding: 10px; border-left: 3px solid #0d5c63; white-space: pre-wrap; word-wrap: break-word; }
+.meta { color: #52616b; font-size: 10pt; margin-bottom: 15px; border-bottom: 1px solid #e1e4e8; padding-bottom: 10px; }
+.note { background: #fff5dc; border-left: 4px solid #e3ae35; padding: 10px; margin: 10px 0; font-size: 9pt; }
+.page-break { page-break-before: always; }
+.badge { display: inline-block; padding: 2px 6px; font-size: 8pt; font-weight: bold; border-radius: 3px; }
+.badge-yes { background: #d4edda; color: #155724; }
+.badge-no { background: #f8d7da; color: #721c24; }
+</style>
+</head>
+<body>
+
+<h1>CampusEats Orders REST Service</h1>
+<div class="meta">
+<strong>CS543 · Web Services · Assignment 5: HTTP Methods & Headers</strong><br>
+<strong>Team ID:</strong> 5 &nbsp; | &nbsp; <strong>Team Leader:</strong> Yash Namdev (Roll / Reg. No.: 20252651066)<br>
+<strong>Team Members:</strong> Yash Namdev (20252651066), Arpit Tamrakar (20252651012), Harsh Jain (20252651022), Anupam Rai (20252651011), Saurabh Singh Chauhan (20252651049)
+</div>
+
+<p>This submission completes <strong>Assignment 5 (HTTP Methods & Headers)</strong> for the CampusEats Orders service. All HTTP verb semantics, query string parameters, custom header protocols, caching, rate limiting, and safe retries are implemented in Python (WSGI) with zero external runtime dependencies.</p>
+
+<h2>Part A — Methods & The Message</h2>
+
+<h3>A1–A5: CampusEats Method Map</h3>
+<table>
+<tr><th>Action</th><th>Method + URL</th><th>Safe</th><th>Idempotent</th><th>Notes</th></tr>
+<tr><td>List/filter/sort/page orders</td><td><code>GET /orders?status=&amp;sort=&amp;page=&amp;pageSize=</code></td><td><span class="badge badge-yes">Yes</span></td><td><span class="badge badge-yes">Yes</span></td><td>Pure read with query string params. Stays a pure read; never alters server state.</td></tr>
+<tr><td>Read one order</td><td><code>GET /orders/{orderId}</code></td><td><span class="badge badge-yes">Yes</span></td><td><span class="badge badge-yes">Yes</span></td><td>Returns cached representation with ETag and Cache-Control. Supports conditional GET.</td></tr>
+<tr><td>Create an order</td><td><code>POST /orders</code></td><td><span class="badge badge-no">No</span></td><td><span class="badge badge-no">No*</span></td><td>Creates order; returns 201 Created + Location. *Made retry-safe via <code>Idempotency-Key</code>.</td></tr>
+<tr><td>Change delivery address</td><td><code>PATCH /orders/{orderId}</code></td><td><span class="badge badge-no">No</span></td><td><span class="badge badge-yes">Yes</span></td><td>Modifies deliveryAddress. Protected by mandatory <code>If-Match</code> ETag against lost updates.</td></tr>
+<tr><td>Delete an order</td><td><code>DELETE /orders/{orderId}</code></td><td><span class="badge badge-no">No</span></td><td><span class="badge badge-yes">Yes</span></td><td>Removes resource; returns 204 No Content. Protected by <code>If-Match</code>.</td></tr>
+<tr><td>Request order cancellation</td><td><code>POST /orders/{orderId}/cancellation</code></td><td><span class="badge badge-no">No</span></td><td><span class="badge badge-no">No</span></td><td>Non-CRUD action modeled as POST to sub-resource (never <code>/cancelOrder</code>). Returns 202 Accepted.</td></tr>
+<tr><td>Discover supported methods</td><td><code>OPTIONS /orders/{orderId}</code></td><td><span class="badge badge-yes">Yes</span></td><td><span class="badge badge-yes">Yes</span></td><td>Returns <code>Allow</code> header listing permitted verbs; completes CORS preflight.</td></tr>
+</table>
+
+<p><em>Constrained Client Fallback (A5):</em> If a restricted client cannot send PATCH or DELETE, it may send POST with <code>X-HTTP-Method-Override: PATCH</code> or <code>DELETE</code> as a documented fallback.</p>
+
+<h2>Part B — Headers on Every Message</h2>
+
+<h3>D2: Request &amp; Response Headers Table</h3>
+<table>
+<tr><th>Endpoint</th><th>Required / Accepted Request Headers</th><th>Important Response Headers Set &amp; Purpose</th></tr>
+<tr><td><code>GET /orders</code></td><td><code>Authorization: Bearer &lt;token&gt;</code>, optional <code>Accept</code>, <code>Accept-Encoding</code></td><td><code>Content-Type: application/json</code>, <code>Cache-Control: private, max-age=30</code>, <code>Content-Encoding: gzip</code>, rate-limit headers, CORS &amp; security headers</td></tr>
+<tr><td><code>POST /orders</code></td><td><code>Authorization</code>, <code>Content-Type: application/json</code>, <code>Idempotency-Key</code>, <code>Accept</code></td><td><code>201 Created</code>, <code>Location: /orders/{id}</code>, <code>ETag: "&lt;hash&gt;"</code>, <code>Cache-Control: no-store</code>, rate-limit headers, CORS &amp; security headers</td></tr>
+<tr><td><code>GET /orders/{id}</code></td><td><code>Authorization</code>, optional <code>If-None-Match</code>, <code>Accept</code></td><td><code>200 OK</code> or <code>304 Not Modified</code> (no body), <code>ETag</code>, <code>Cache-Control: private, max-age=60</code>, CORS &amp; security headers</td></tr>
+<tr><td><code>PATCH /orders/{id}</code></td><td><code>Authorization</code>, <code>Content-Type</code>, required <code>If-Match</code>, optional override</td><td><code>200 OK</code> (or <code>412 Precondition Failed</code>), updated <code>ETag</code>, <code>Cache-Control: no-store</code></td></tr>
+<tr><td><code>DELETE /orders/{id}</code></td><td><code>Authorization</code>, required <code>If-Match</code>, optional override</td><td><code>204 No Content</code> (or <code>412 Precondition Failed</code>), <code>Cache-Control: no-store</code></td></tr>
+<tr><td><code>POST /orders/{id}/cancellation</code></td><td><code>Authorization</code>, <code>Content-Type: application/json</code></td><td><code>202 Accepted</code> (or <code>409 Conflict</code>, <code>422 Unprocessable</code>), <code>Cache-Control: no-store</code></td></tr>
+<tr><td><code>OPTIONS</code></td><td>Browser preflight headers (<code>Origin</code>, <code>Access-Control-Request-Method</code>)</td><td><code>204 No Content</code>, <code>Allow</code>, full <code>Access-Control-*</code> CORS suite</td></tr>
+</table>
+
+<h2>Part C — Caching &amp; Safe Retries</h2>
+
+<h3>C4: The Safe-Retry Plan</h3>
+<table>
+<tr><th>Risky Endpoint</th><th>Inherent Risk</th><th>Mechanism Applied</th><th>Justification</th></tr>
+<tr><td><code>POST /orders</code></td><td>Network drop during payment or response; client retries. Duplicate risks charging student twice or cooking duplicate meals.</td><td><strong>Idempotency-Key</strong></td><td>The server atomically links the key to the original order. Retries return the cached 201 response and Location without repeating charges or kitchen dispatch.</td></tr>
+<tr><td><code>GET /orders/{id}</code></td><td>Bandwidth waste and redundant parsing on mobile network when entity is unchanged.</td><td><strong>If-None-Match</strong></td><td>Client transmits stored ETag. Matching ETag returns 304 Not Modified with zero-byte body, saving cellular data and battery.</td></tr>
+<tr><td><code>PATCH /orders/{id}</code></td><td>Two concurrent dispatchers/customers updating delivery address simultaneously (Lost Update problem).</td><td><strong>If-Match</strong></td><td>Requires client to submit current ETag. If another editor updated the order first, server rejects with 412 Precondition Failed instead of overwriting.</td></tr>
+<tr><td><code>POST /orders/{id}/cancellation</code></td><td>Duplicate cancellation requests or attempting to cancel already-completed orders.</td><td><strong>State 409 / 422</strong></td><td>Repeated cancellation returns 409 Conflict. Disallowed lifecycle state returns 422 Unprocessable Content.</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>A6: Fully Labelled Complete HTTP Exchange</h2>
+
+<h3>Request — HTTP/1.1</h3>
+<pre>POST /orders HTTP/1.1                                  &lt;-- Request Line (Method, URI, Protocol Version)
+Host: 127.0.0.1:8001                                   &lt;-- Host Header (Mandatory in HTTP/1.1)
+User-Agent: curl/8.5.0                                 &lt;-- Client User-Agent Header
+Accept: application/json                               &lt;-- Content Negotiation: Requesting JSON
+Content-Type: application/json                         &lt;-- Media Type of Payload
+Authorization: Bearer demo-token                       &lt;-- Bearer Authentication Credential
+Idempotency-Key: a5-demo-key-001                       &lt;-- Idempotency Token for Safe Retries
+Content-Length: 119                                    &lt;-- Body Length in Bytes
+                                                       &lt;-- Empty Line (CRLF) Separating Headers and Body
+{"customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210"}  &lt;-- JSON Body</pre>
+
+<h3>Response — HTTP/1.0 (WSGI Development Server)</h3>
+<pre>HTTP/1.0 201 Created                                   &lt;-- Status Line (Protocol, Status Code, Reason)
+Date: Tue, 22 Sep 2026 03:06:53 GMT                    &lt;-- Date Header
+Server: WSGIServer/0.2 CPython/3.12.3                  &lt;-- Server Header
+Content-Type: application/json                         &lt;-- Response Media Type
+Access-Control-Allow-Origin: *                         &lt;-- CORS: Permitted Caller Origins
+Access-Control-Allow-Methods: GET, POST, PATCH, ...    &lt;-- CORS: Allowed HTTP Verbs
+Access-Control-Allow-Headers: Authorization, ...       &lt;-- CORS: Permitted Request Headers
+Access-Control-Expose-Headers: Location, ETag, ...     &lt;-- CORS: Headers Exposable to Client JS
+Vary: Accept, Accept-Encoding, Origin                  &lt;-- Cache Invalidation Directives
+X-Content-Type-Options: nosniff                        &lt;-- Security: MIME Sniffing Prevention
+Strict-Transport-Security: max-age=31536000            &lt;-- Security: Enforce HTTPS
+X-RateLimit-Limit: 50                                  &lt;-- Rate Limit: Max Requests in Window
+X-RateLimit-Remaining: 49                              &lt;-- Rate Limit: Remaining Requests
+Location: /orders/ord-f8a326caa1a1                     &lt;-- Canonical URI of New Resource
+Cache-Control: no-store                                &lt;-- Cache Directive: Do Not Cache Mutation
+ETag: "0aa5da47aa253af6"                               &lt;-- Entity Tag Fingerprint of Representation
+Content-Length: 209                                    &lt;-- Body Length in Bytes
+                                                       &lt;-- Empty Line (CRLF) Separating Headers and Body
+{"id":"ord-f8a326caa1a1","customerId":"stu-102","items":[{"menuItemId":"menu-42","quantity":2}],"deliveryAddress":"Hostel A, Room 210","status":"PAYMENT_PENDING","createdAt":"2026-09-22T03:06:53.004819+00:00"}</pre>
+
+<p><em>HTTP Version Note:</em> The client specifies <code>HTTP/1.1</code>. The standard Python <code>wsgiref.simple_server</code> responds with <code>HTTP/1.0</code> close-on-finish semantics. In production behind Nginx/TLS, this is upgraded to <code>HTTP/1.1</code> or <code>HTTP/2</code>.</p>
+
+<h2>Required Answers to Assignment Questions</h2>
+
+<p><strong>1. For three of your endpoints, give the method, the success status, and the single response header that matters most — and why.</strong><br>
+&bull; <code>POST /orders</code>: <strong>201 Created</strong>; <code>Location: /orders/{orderId}</code> matters most because the client cannot predict the generated order ID; Location provides the canonical resource URI to inspect or track.<br>
+&bull; <code>GET /orders/{orderId}</code>: <strong>200 OK</strong>; <code>ETag</code> matters most because it cryptographically fingerprints the representation, powering 304 conditional caching and 412 concurrency protection.<br>
+&bull; <code>DELETE /orders/{orderId}</code>: <strong>204 No Content</strong>; <code>Cache-Control: no-store</code> matters most because intermediate caches must immediately invalidate any stored copies and never serve stale cached deleted items.</p>
+
+<p><strong>2. Which of your endpoints are safe, and which are idempotent? Which one is neither, and how did you make it retry-safe?</strong><br>
+Safe endpoints: <code>GET /orders</code>, <code>GET /orders/{id}</code>, <code>OPTIONS</code>. Idempotent endpoints: <code>GET</code>, <code>OPTIONS</code>, <code>PATCH /orders/{id}</code>, <code>DELETE /orders/{id}</code>. Neither safe nor idempotent: <code>POST /orders</code> and <code>POST /orders/{id}/cancellation</code>. <code>POST /orders</code> was made retry-safe via a mandatory <code>Idempotency-Key</code> header; repeated submissions return the cached original 201 response and Location without duplicate payment processing or food preparation.</p>
+
+<p><strong>3. Show one ETag from your service, the request that returns 304, and the write that returns 412. What does each save or prevent?</strong><br>
+Example ETag: <code>"0aa5da47aa253af6"</code>.<br>
+&bull; <code>GET /orders/ord-f8a326caa1a1</code> with <code>If-None-Match: "0aa5da47aa253af6"</code> returns <strong>304 Not Modified</strong>. <em>Saves:</em> Eliminates redundant payload transmission, network latency, and client JSON parsing.<br>
+&bull; <code>PATCH /orders/ord-f8a326caa1a1</code> with <code>If-Match: "stale-etag-99999"</code> returns <strong>412 Precondition Failed</strong>. <em>Prevents:</em> Prevents the Lost Update problem where concurrent edits overwrite newer modifications.</p>
+
+<p><strong>4. You return 422 for one case and 400 for another. Give the exact request that triggers each, and explain the difference.</strong><br>
+&bull; <strong>400 Bad Request:</strong> <code>POST /orders</code> with <code>{"customerId":"stu-102"}</code> (missing required fields <code>items</code> and <code>deliveryAddress</code>).<br>
+&bull; <strong>422 Unprocessable Content:</strong> <code>POST /orders/{id}/cancellation</code> on an already cancelled or delivered order.<br>
+<em>Difference:</em> 400 signifies a <strong>syntactic/structural defect</strong> (malformed payload or missing required schema fields). 422 signifies a <strong>semantic/domain refusal</strong> (the JSON structure is valid, but business logic rejects the state transition in the entity's current state).</p>
+
+<p><strong>5. A browser page on another origin calls your API and is blocked — yet your server logs show a 200. Who blocked it, and which response header fixes it?</strong><br>
+The <strong>client browser</strong> blocked it under the Same-Origin Policy (SOP). The server received the request, processed it, and returned 200, but because the response omitted cross-origin permissions, the browser prevented client-side JavaScript from reading the data. The <code>Access-Control-Allow-Origin: *</code> header (alongside OPTIONS preflight headers) fixes it.</p>
+
+<p><strong>6. Name one response where you set Cache-Control to allow caching and one where you must use no-store. Why each?</strong><br>
+&bull; Allow caching: <code>GET /orders/{id}</code> sets <code>Cache-Control: private, max-age=60</code> because individual order details rarely change second-to-second; private caching allows the student's browser to reuse it while preventing public proxy caching.<br>
+&bull; Must use <code>no-store</code>: <code>POST /orders</code> and <code>PATCH /orders/{id}</code> set <code>Cache-Control: no-store</code> because mutations and financial transactions must never be replayed from cache.</p>
+
+<p><strong>7. Your search endpoint is a GET. When would POST be the right choice instead, and what do you give up by switching?</strong><br>
+POST is appropriate when query criteria become excessively large (e.g. hundreds of item IDs or complex nested filter trees exceeding URL length limits) or contain sensitive data that should not leak into browser history or URL logs. Switching to POST gives up automatic HTTP cacheability, browser back/forward navigation, URL bookmarkability, and link shareability.</p>
+
+<p><strong>8. Location appears on a 201 and on a 3xx. What does it point to in each case?</strong><br>
+On <strong>201 Created</strong>, <code>Location</code> points to the persistent URI of the newly created resource. On <strong>3xx Redirection</strong>, <code>Location</code> points to the target URI where the client should re-dispatch its request next.</p>
+
+<h2>Verification &amp; Test Suite Evidence</h2>
+<pre>$ python3 run_tests.py
+Running 15 test cases for CampusEats Orders API (Assignment 5)...
+  [PASS] test_cancellation_sub_resource
+  [PASS] test_conditional_delete_and_412
+  [PASS] test_conditional_get_returns_304
+  [PASS] test_conditional_patch_update_and_412
+  [PASS] test_content_negotiation_unsupported_accept_returns_406
+  [PASS] test_create_returns_201_location_etag_and_security_headers
+  [PASS] test_gzip_compression_on_large_payload
+  [PASS] test_idempotent_repeat_returns_original_order
+  [PASS] test_invalid_query_params_return_400
+  [PASS] test_malformed_body_uses_problem_shape
+  [PASS] test_method_override_patch_and_delete
+  [PASS] test_missing_token_returns_401_and_unknown_returns_404
+  [PASS] test_options_discovery_and_cors
+  [PASS] test_query_params_filtering_sorting_and_pagination
+  [PASS] test_rate_limiting_signal
+============================================================
+Results: 15 passed, 0 failed in 0.009s
+============================================================
+
+$ python3 validate_openapi.py openapi.yaml
+OpenAPI document parsed successfully.
+Structural checks completed: 0 errors.</pre>
+
+</body>
+</html>
