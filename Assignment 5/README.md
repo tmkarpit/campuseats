@@ -1,11 +1,4 @@
 # CampusEats Orders REST Service — Assignment 5
-
-CS543 · Web Services · Assignment 5: HTTP Methods & Headers  
-**Team ID:** 5  
-**Team Members:** Yash Namdev (20252651066), Arpit Tamrakar (20252651012), Harsh Jain (20252651022), Anupam Rai (20252651011), Saurabh Singh Chauhan (20252651049)
-
----
-
 ## Service Overview
 
 This service implements the complete RESTful HTTP Methods & Headers contract for the **CampusEats Orders** platform using standard Python (WSGI) with zero external dependencies.
