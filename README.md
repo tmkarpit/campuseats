@@ -22,4 +22,4 @@ CampusEats is a course project for planning a web services system that connects 
 
 ## Current project stage
 
-This repository is the initial project setup for CS543 Assignment 1. It records HTTP observations and describes the early CampusEats domain model before implementation begins.
+This repository is the initial project setup for CS543 Assignments. It records HTTP observations and describes the early CampusEats domain model before implementation begins.
