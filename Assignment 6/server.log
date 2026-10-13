@@ -1,0 +1,11 @@
+[incident b7b590be] Error: SQLITE_ERROR: no such table: orders_v2 at /srv/app/db.js:42
+    at dbRead (/home/claude/cs543_a06/server.js:85:29)
+    at /home/claude/cs543_a06/server.js:214:13
+    at /home/claude/cs543_a06/server.js:74:19
+    at Layer.handle [as handle_request] (/home/claude/cs543_a06/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/claude/cs543_a06/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/claude/cs543_a06/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/claude/cs543_a06/node_modules/express/lib/router/layer.js:95:5)
+    at /home/claude/cs543_a06/node_modules/express/lib/router/index.js:284:15
+    at param (/home/claude/cs543_a06/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/claude/cs543_a06/node_modules/express/lib/router/index.js:376:14)

@@ -1,0 +1,8 @@
+{
+  "name": "orders-service",
+  "version": "6.0.0",
+  "description": "CS543 A06 - Orders service with honest status codes, Problem Details and validation",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node test.js" },
+  "dependencies": { "express": "^4.19.2" }
+}

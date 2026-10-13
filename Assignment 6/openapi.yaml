@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: Orders Service
+  version: 6.0.0
+  description: CS543 A06 - honest status codes, one error shape (RFC 7807 Problem Details), validated requests.
+servers:
+  - url: http://localhost:3000
+paths:
+  /orders:
+    get:
+      summary: List orders
+      parameters: [{ $ref: '#/components/parameters/Accept' }]
+      responses:
+        '200': { description: All orders, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Order' } } }, application/xml: { schema: { type: array, items: { $ref: '#/components/schemas/Order' } } } } }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    post:
+      summary: Create an order (charges payment)
+      parameters:
+        - { $ref: '#/components/parameters/Accept' }
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Same key + same request replays the first result (Idempotent-Replayed - true). 5xx/429 results are not remembered.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/NewOrder' } }
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location: { schema: { type: string, example: /orders/ord_1001 }, description: URL of the new order }
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/Order' } }
+            application/xml: { schema: { $ref: '#/components/schemas/Order' } }
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '402': { description: Card declined (payment-declined), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '409': { description: SKU unknown or out of stock (item-unavailable), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+        '415': { description: Body is not application/json (unsupported-media), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+        '422': { description: Empty cart (empty-cart) or field errors (validation-failed), content: { application/problem+json: { schema: { $ref: '#/components/schemas/ValidationProblem' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+        '503': { description: 'Payment provider timed out (transient, safe to retry)', headers: { Retry-After: { schema: { type: integer } } }, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+  /orders/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, example: ord_1001 } }
+    get:
+      summary: Fetch one order
+      parameters: [{ $ref: '#/components/parameters/Accept' }]
+      responses:
+        '200': { description: The order, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } }, application/xml: { schema: { $ref: '#/components/schemas/Order' } } } }
+        '404': { $ref: '#/components/responses/OrderNotFound' }
+        '406': { $ref: '#/components/responses/NotAcceptable' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+    patch:
+      summary: Change status (paid->shipped|cancelled, shipped->delivered) and/or address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                status: { type: string, enum: [paid, shipped, delivered, cancelled] }
+                address: { type: string, minLength: 1 }
+      responses:
+        '200': { description: Updated order, content: { application/json: { schema: { $ref: '#/components/schemas/Order' } } } }
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '404': { $ref: '#/components/responses/OrderNotFound' }
+        '409': { description: Move not allowed from the current status (illegal-transition), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+        '422': { description: Bad fields (validation-failed), content: { application/problem+json: { schema: { $ref: '#/components/schemas/ValidationProblem' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/Internal' }
+    delete:
+      summary: Delete a paid or cancelled order (stock is released)
+      responses:
+        '204': { description: Deleted (no body) }
+        '404': { $ref: '#/components/responses/OrderNotFound' }
+        '409': { description: Order already shipped/delivered (illegal-transition), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+components:
+  parameters:
+    Accept:
+      name: Accept
+      in: header
+      description: application/json (default) or application/xml; anything else gets 406.
+      schema: { type: string, default: application/json }
+  schemas:
+    NewOrder:
+      type: object
+      required: [items, address]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, qty]
+            properties:
+              sku: { type: string, minLength: 1, example: widget }
+              qty: { type: integer, minimum: 1 }
+        address: { type: string, minLength: 1 }
+        payment_token: { type: string, description: 'Demo hooks - tok_decline = declined, tok_slow = provider timeout', default: tok_ok }
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [paid, shipped, delivered, cancelled] }
+        items: { type: array, items: { type: object, properties: { sku: { type: string }, qty: { type: integer }, unit_price: { type: number } } } }
+        address: { type: string }
+        total: { type: number }
+        created_at: { type: string, format: date-time }
+    Problem:
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type: { type: string, format: uri, description: 'https://cs543.example/problems/<slug>' }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        incident: { type: string, description: Only on internal-error }
+        allowed: { type: array, items: { type: string }, description: Only on illegal-transition }
+        unavailable: { type: array, items: { type: object, properties: { sku: { type: string }, reason: { type: string } } }, description: Only on item-unavailable }
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: array
+              items: { type: object, required: [field, message], properties: { field: { type: string, example: 'items[0].qty' }, message: { type: string } } }
+  responses:
+    InvalidJson: { description: Malformed JSON (invalid-json), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    OrderNotFound: { description: No such order (order-not-found), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    NotAcceptable: { description: Accept header cannot be satisfied (not-acceptable), content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    RateLimited:
+      description: More than 30 requests / 10 s (rate-limited). Retry later.
+      headers: { Retry-After: { schema: { type: integer }, description: Seconds to wait } }
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    Internal: { description: 'Unexpected failure (internal-error), detail is logged server-side only', content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }

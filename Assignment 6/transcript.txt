@@ -1,0 +1,288 @@
+
+==================== D1  SUCCESS PATH ====================
+
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[{"sku":"widget","qty":2},{"sku":"gadget","qty":1}],"address":"12 Ring Road, Surat"}'
+HTTP/1.1 201 Created
+Location: /orders/ord_1001
+Content-Type: application/json; charset=utf-8
+Content-Length: 215
+ETag: W/"d7-XVRRLlw01jhDJVVSEl90Jfvv1Ms"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1001","status":"paid","items":[{"sku":"widget","qty":2,"unit_price":9.99},{"sku":"gadget","qty":1,"unit_price":24.5}],"address":"12 Ring Road, Surat","total":44.48,"created_at":"2026-10-13T08:53:32.541Z"}
+
+$ curl -si localhost:3000/orders/ord_1001
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 215
+ETag: W/"d7-XVRRLlw01jhDJVVSEl90Jfvv1Ms"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1001","status":"paid","items":[{"sku":"widget","qty":2,"unit_price":9.99},{"sku":"gadget","qty":1,"unit_price":24.5}],"address":"12 Ring Road, Surat","total":44.48,"created_at":"2026-10-13T08:53:32.541Z"}
+
+$ curl -si -X PATCH localhost:3000/orders/ord_1001 -H 'Content-Type: application/json' -d '{"status":"shipped"}'
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 218
+ETag: W/"da-pgry4aHRyNJcNVxLhFRcvlXYqmo"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1001","status":"shipped","items":[{"sku":"widget","qty":2,"unit_price":9.99},{"sku":"gadget","qty":1,"unit_price":24.5}],"address":"12 Ring Road, Surat","total":44.48,"created_at":"2026-10-13T08:53:32.541Z"}
+
+
+==================== D2  FAILURES ====================
+
+--- empty cart
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[],"address":"x"}'
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 195
+ETag: W/"c3-er1rcuMgD4J0baqmRvmQ3G9wxo8"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/empty-cart","title":"Cart is empty","status":422,"detail":"The cart has no items.","errors":[{"field":"items","message":"must contain at least one item"}]}
+
+--- qty <= 0
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[{"sku":"widget","qty":0}],"address":"x"}'
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 221
+ETag: W/"dd-mEGdyOTkeuGK6ZkFCzDRzAyuJFw"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/validation-failed","title":"Request validation failed","status":422,"detail":"1 field(s) failed validation.","errors":[{"field":"items[0].qty","message":"must be an integer >= 1"}]}
+
+--- two bad fields at once (qty and address)
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[{"sku":"widget","qty":-1}],"address":""}'
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 296
+ETag: W/"128-BVmHEPgEi4yL/HNKWTP84yKyq8c"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/validation-failed","title":"Request validation failed","status":422,"detail":"2 field(s) failed validation.","errors":[{"field":"items[0].qty","message":"must be an integer >= 1"},{"field":"address","message":"is required and must be a non-empty string"}]}
+
+--- unknown id
+$ curl -si localhost:3000/orders/ord_9999
+HTTP/1.1 404 Not Found
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 136
+ETag: W/"88-VDAGfq/TXA6FZKqx1l/7geGLnkk"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/order-not-found","title":"Order not found","status":404,"detail":"No order with id 'ord_9999'."}
+
+--- illegal transition (shipped -> paid)
+$ curl -si -X PATCH localhost:3000/orders/ord_1001 -H 'Content-Type: application/json' -d '{"status":"paid"}'
+HTTP/1.1 409 Conflict
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 191
+ETag: W/"bf-IH9A3IP0NbIv/9W2hqrXPEkckXY"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/illegal-transition","title":"Illegal status transition","status":409,"detail":"Cannot move an order from 'shipped' to 'paid'.","allowed":["delivered"]}
+
+--- item unavailable (out of stock)
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[{"sku":"gizmo","qty":1}],"address":"x"}'
+HTTP/1.1 409 Conflict
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 220
+ETag: W/"dc-29SVVvyakONgiWYKwBMWQ4T2Hwk"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/item-unavailable","title":"Item unavailable","status":409,"detail":"One or more items cannot be fulfilled.","unavailable":[{"sku":"gizmo","reason":"only 0 in stock, 1 requested"}]}
+
+--- payment declined
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[{"sku":"widget","qty":1}],"address":"x","payment_token":"tok_decline"}'
+HTTP/1.1 402 Payment Required
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 149
+ETag: W/"95-mKSuVCeF8BjSFI1M5IfWWr2POZc"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/payment-declined","title":"Payment declined","status":402,"detail":"The payment provider declined the card."}
+
+--- malformed JSON
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{oops'
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 144
+ETag: W/"90-S0qBjMWx0ibrswoQ6X+UlRxNEJA"
+Date: Tue, 13 Oct 2026 08:53:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/invalid-json","title":"Malformed JSON body","status":400,"detail":"The request body is not valid JSON."}
+
+--- payment provider timeout -> 503 + Retry-After
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -d '{"items":[{"sku":"widget","qty":1}],"address":"x","payment_token":"tok_slow"}'
+HTTP/1.1 503 Service Unavailable
+Retry-After: 2
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 204
+ETag: W/"cc-StCFEJraQKreOoyIW7xry8oabEk"
+Date: Tue, 13 Oct 2026 08:53:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/service-unavailable","title":"Payment service unavailable","status":503,"detail":"The payment provider did not answer in time. Nothing was charged; retry shortly."}
+
+--- internal error is hidden (simulated DB failure)
+$ curl -si localhost:3000/orders/ord_1001 -H 'X-Simulate-Fault: db'
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 214
+ETag: W/"d6-1G7AI+9L4WNTeD6hR6h4DW6cHe8"
+Date: Tue, 13 Oct 2026 08:53:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/internal-error","title":"Internal server error","status":500,"detail":"Something went wrong on our side. Quote the incident id if you contact support.","incident":"b7b590be"}
+
+--- rate limit: 30 quick requests as client 'burst' (status codes only), then the 31st in full
+$ for i in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code} ' localhost:3000/orders -H 'X-Client-Id: burst'; done
+200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 
+
+$ curl -si localhost:3000/orders -H 'X-Client-Id: burst'
+HTTP/1.1 429 Too Many Requests
+Retry-After: 10
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 157
+ETag: W/"9d-hCRKh3DlI5/0S4zrmQiWvYF2nQU"
+Date: Tue, 13 Oct 2026 08:53:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/rate-limited","title":"Too many requests","status":429,"detail":"Limit is 30 requests per 10 seconds. Retry in 10s."}
+
+
+==================== D3  CONTENT NEGOTIATION ====================
+
+$ curl -si localhost:3000/orders/ord_1001 -H 'Accept: application/json'
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 218
+ETag: W/"da-pgry4aHRyNJcNVxLhFRcvlXYqmo"
+Date: Tue, 13 Oct 2026 08:53:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1001","status":"shipped","items":[{"sku":"widget","qty":2,"unit_price":9.99},{"sku":"gadget","qty":1,"unit_price":24.5}],"address":"12 Ring Road, Surat","total":44.48,"created_at":"2026-10-13T08:53:32.541Z"}
+
+$ curl -si localhost:3000/orders/ord_1001 -H 'Accept: application/xml'
+HTTP/1.1 200 OK
+Content-Type: application/xml; charset=utf-8
+Content-Length: 358
+ETag: W/"166-7eHX6PzyWMfLmaUs6EYVqKHHyEM"
+Date: Tue, 13 Oct 2026 08:53:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+<?xml version="1.0" encoding="UTF-8"?><order><id>ord_1001</id><status>shipped</status><items><item><sku>widget</sku><qty>2</qty><unit_price>9.99</unit_price></item><item><sku>gadget</sku><qty>1</qty><unit_price>24.5</unit_price></item></items><address>12 Ring Road, Surat</address><total>44.48</total><created_at>2026-10-13T08:53:32.541Z</created_at></order>
+
+--- cannot produce -> 406
+$ curl -si localhost:3000/orders/ord_1001 -H 'Accept: text/html'
+HTTP/1.1 406 Not Acceptable
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 193
+ETag: W/"c1-Rmb5MiX2kwMnSx/RuScItcynFPQ"
+Date: Tue, 13 Oct 2026 08:53:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/not-acceptable","title":"Representation not available","status":406,"detail":"Cannot produce 'text/html'. Supported: application/json, application/xml."}
+
+
+==================== D4  NO REGRESSIONS (A5: idempotency + timeouts) ====================
+
+--- same Idempotency-Key twice: same order, second one flagged as replay
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-1' -d '{"items":[{"sku":"widget","qty":1}],"address":"x"}'
+HTTP/1.1 201 Created
+Location: /orders/ord_1002
+Content-Type: application/json; charset=utf-8
+Content-Length: 153
+ETag: W/"99-8/87eurN/DMkn8EuTE5HPfbeb6E"
+Date: Tue, 13 Oct 2026 08:53:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1002","status":"paid","items":[{"sku":"widget","qty":1,"unit_price":9.99}],"address":"x","total":9.99,"created_at":"2026-10-13T08:53:34.075Z"}
+
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-1' -d '{"items":[{"sku":"widget","qty":1}],"address":"x"}'
+HTTP/1.1 201 Created
+Location: /orders/ord_1002
+Idempotent-Replayed: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 153
+ETag: W/"99-8/87eurN/DMkn8EuTE5HPfbeb6E"
+Date: Tue, 13 Oct 2026 08:53:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1002","status":"paid","items":[{"sku":"widget","qty":1,"unit_price":9.99}],"address":"x","total":9.99,"created_at":"2026-10-13T08:53:34.075Z"}
+
+--- timeout (above, tok_slow) was not cached: the same key succeeds on retry
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-2' -d '{"items":[{"sku":"widget","qty":1}],"address":"x","payment_token":"tok_slow"}'
+HTTP/1.1 503 Service Unavailable
+Retry-After: 2
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 204
+ETag: W/"cc-StCFEJraQKreOoyIW7xry8oabEk"
+Date: Tue, 13 Oct 2026 08:53:35 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/service-unavailable","title":"Payment service unavailable","status":503,"detail":"The payment provider did not answer in time. Nothing was charged; retry shortly."}
+
+$ curl -si -X POST localhost:3000/orders -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-2' -d '{"items":[{"sku":"widget","qty":1}],"address":"x"}'
+HTTP/1.1 201 Created
+Location: /orders/ord_1003
+Content-Type: application/json; charset=utf-8
+Content-Length: 153
+ETag: W/"99-/Sc/Rmv80tm2EbiAan5IZXIyREk"
+Date: Tue, 13 Oct 2026 08:53:35 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id":"ord_1003","status":"paid","items":[{"sku":"widget","qty":1,"unit_price":9.99}],"address":"x","total":9.99,"created_at":"2026-10-13T08:53:35.152Z"}
+
+--- DELETE
+$ curl -si -X DELETE localhost:3000/orders/ord_1001
+HTTP/1.1 409 Conflict
+Content-Type: application/problem+json; charset=utf-8
+Content-Length: 175
+ETag: W/"af-qr/x7ehuimBBoFT+T06SgzSz9gs"
+Date: Tue, 13 Oct 2026 08:53:35 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"type":"https://cs543.example/problems/illegal-transition","title":"Illegal status transition","status":409,"detail":"Cannot delete an order that is 'shipped'.","allowed":[]}
+
+$ curl -si -X DELETE localhost:3000/orders/ord_1002
+HTTP/1.1 204 No Content
+Date: Tue, 13 Oct 2026 08:53:35 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+
+
