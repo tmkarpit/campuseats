@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CampusEats · Dishes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header><p class="eyebrow">CAMPUS EATS</p><h1>Today's dishes</h1><p>Live menu data from the GraphQL service.</p></header>
+    <section id="message" aria-live="polite"></section>
+    <section id="dish-list" class="grid" aria-label="Available dishes"></section>
+    <section class="add-card">
+      <h2>Add a dish</h2>
+      <form id="add-form">
+        <label>Name <input id="name" required maxlength="100" placeholder="Paneer Roll"></label>
+        <label>Price (₹) <input id="price" required type="number" min="0" step="0.01" placeholder="90"></label>
+        <label class="check"><input id="available" type="checkbox" checked> Available now</label>
+        <button type="submit">Add dish</button>
+      </form>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

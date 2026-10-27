@@ -1,0 +1,28 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: campuseats_graphql
+      MYSQL_USER: campuseats_user
+      MYSQL_PASSWORD: campuseats_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports: ["3307:3306"]
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - mysql_data:/var/lib/mysql
+  app:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm start"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: campuseats_user
+      DB_PASSWORD: campuseats_password
+      DB_NAME: campuseats_graphql
+      PORT: 4000
+    ports: ["4000:4000"]
+    volumes: [".:/app"]
+    depends_on: [mysql]
+volumes:
+  mysql_data:

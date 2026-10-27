@@ -19,7 +19,8 @@ CampusEats is a course project for planning a web services system that connects 
 - `brief.md` - a one-page project brief with the system's users, nouns, and verbs.
 - `output.md` - a concise transcript of the observed command and analysis output.
 - `docs/` - supporting project documentation.
+- `Assignment 7/` - the CampusEats GraphQL dishes service, with its web client and demonstration screenshots.
 
 ## Current project stage
 
-This repository is the initial project setup for CS543 Assignments. It records HTTP observations and describes the early CampusEats domain model before implementation begins.
+This repository records the initial CampusEats domain model and its implementation as a GraphQL dishes service for CS543 Assignments.
