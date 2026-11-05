@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CampusEats Menu</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>CampusEats Menu</h1>
+  <p class="sub">College canteen menu &mdash; served by a REST API (Node + Express)</p>
+
+  <div id="list">Loading&hellip;</div>
+
+  <form id="addForm">
+    <h3>Add a dish</h3>
+    <input type="text" id="name" placeholder="Dish name" required>
+    <input type="number" id="price" placeholder="Price (rupees)" min="0" required>
+    <label><input type="checkbox" id="available" checked> Available</label>
+    <button type="submit">Add dish</button>
+    <p id="msg"></p>
+  </form>
+
+  <script>
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // 1. READ: GET /items, then draw the list
+    async function load() {
+      const res = await fetch('/items');
+      const items = await res.json();
+      document.getElementById('list').innerHTML = items.map(i =>
+        `<div class="dish${i.available ? '' : ' soldout'}">` +
+        `<span><span class="name">${esc(i.name)}</span>` +
+        `<span class="tag">${i.available ? 'Available' : 'Sold out'}</span></span>` +
+        `<span class="price">&#8377;${esc(i.price)}</span></div>`).join('');
+    }
+
+    // 2. WRITE: the form POSTs a new dish, then refreshes the list
+    document.getElementById('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      const res = await fetch('/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('name').value,
+          price: document.getElementById('price').value,
+          available: document.getElementById('available').checked
+        })
+      });
+      if (!res.ok) { msg.textContent = (await res.json()).error; return; }
+      msg.textContent = '';
+      e.target.reset();
+      load();
+    });
+
+    load();
+  </script>
+</body>
+</html>

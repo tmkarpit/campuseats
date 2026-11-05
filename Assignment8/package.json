@@ -1,0 +1,9 @@
+{
+  "name": "campuseats-menu",
+  "version": "1.0.0",
+  "description": "CampusEats (college canteen) Menu service as a REST API - Node + Express",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "license": "ISC",
+  "dependencies": { "express": "^5.1.0" }
+}
