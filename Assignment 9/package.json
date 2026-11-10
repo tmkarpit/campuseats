@@ -1,0 +1,16 @@
+{
+  "name": "cs543-a9-secure-catalogue",
+  "version": "1.0.0",
+  "description": "CS543 Assignment 09 - Securing the Catalogue REST API with JWT + bcrypt + role-based access",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "bash demo.sh"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
